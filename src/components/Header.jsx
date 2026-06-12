@@ -40,14 +40,25 @@ export default function Header({ darkMode, onToggleDarkMode, endDate, onEditEndD
                 width: 40,
                 height: 40,
                 borderRadius: 12,
-                background: 'var(--gradient-1)',
+                overflow: 'hidden',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 boxShadow: '0 4px 15px var(--accent-glow)',
+                background: 'var(--gradient-1)',
+                padding: '2px',
               }}
             >
-              <Rocket size={20} color="white" />
+              <img 
+                src="/logo.png" 
+                alt="SaaS Diary Logo" 
+                style={{ 
+                  width: '100%', 
+                  height: '100%', 
+                  objectFit: 'cover', 
+                  borderRadius: 10 
+                }} 
+              />
             </div>
             <div>
               <h1 style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.5px', lineHeight: 1.2 }}>
