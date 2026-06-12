@@ -62,7 +62,7 @@ export default function App() {
           const docRef = doc(db, 'users', u.uid);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
-            setState(docSnap.data());
+            setState({ ...docSnap.data(), isOnboarded: true });
           } else {
             // First time login: mark isOnboarded as false to trigger onboarding
             setState((prev) => ({ ...prev, isOnboarded: false }));
@@ -82,7 +82,7 @@ export default function App() {
     const docRef = doc(db, 'users', user.uid);
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
-        const remoteData = docSnap.data();
+        const remoteData = { ...docSnap.data(), isOnboarded: true };
         setState((prev) => {
           if (JSON.stringify(prev) !== JSON.stringify(remoteData)) {
             return remoteData;
@@ -96,7 +96,7 @@ export default function App() {
 
   // 3. Local/Cloud save triggers (outbound changes)
   useEffect(() => {
-    if (state.isOnboarded === false) return;
+    if (state.isOnboarded !== true) return;
     saveState(state);
     if (user) {
       const saveToFirestore = async () => {
@@ -340,7 +340,7 @@ export default function App() {
     );
   }
 
-  if (state.isOnboarded === false) {
+  if (state.isOnboarded !== true) {
     return (
       <Onboarding
         user={user}
