@@ -1,51 +1,72 @@
 import { motion } from 'framer-motion';
-import { Rocket, Shield, Activity, Target, ArrowRight, CheckCircle2, Lock } from 'lucide-react';
+import { ArrowRight, Lock } from 'lucide-react';
 
 export default function LandingPage({ onLogin, darkMode, onToggleDarkMode }) {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.15 } },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
-  };
-
   return (
     <div
       style={{
         minHeight: '100vh',
-        background: 'var(--bg-primary)',
-        color: 'var(--text-primary)',
+        background: darkMode ? '#0B0B0F' : '#F8F9FB',
+        color: darkMode ? '#ffffff' : '#1e293b',
         position: 'relative',
         overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        transition: 'background-color 0.4s ease, color 0.4s ease',
       }}
     >
-      {/* Decorative Blur Blobs */}
+      {/* Faint Heatmap Grid in Background */}
       <div
         style={{
           position: 'absolute',
-          top: '-10%',
-          right: '5%',
+          top: '45%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(24, 18px)',
+          gap: '6px',
+          opacity: darkMode ? 0.03 : 0.06,
+          pointerEvents: 'none',
+          zIndex: 0,
+          maskImage: 'radial-gradient(circle, black 40%, transparent 80%)',
+          WebkitMaskImage: 'radial-gradient(circle, black 40%, transparent 80%)',
+        }}
+      >
+        {Array.from({ length: 240 }).map((_, i) => {
+          // Color some cells to mimic a real heatmap
+          let cellColor = darkMode ? '#1c1c28' : '#e2e4ed';
+          if (i % 13 === 0) cellColor = 'var(--accent-primary)';
+          else if (i % 19 === 0) cellColor = darkMode ? '#3b1f2b' : '#f9c5c5';
+          else if (i % 29 === 0) cellColor = darkMode ? '#5c2434' : '#f08080';
+
+          return (
+            <div
+              key={i}
+              style={{
+                width: '18px',
+                height: '18px',
+                borderRadius: '4px',
+                background: cellColor,
+                transition: 'background-color 0.4s ease',
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {/* Decorative Glow Blob */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '45%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
           width: '500px',
           height: '500px',
           background: 'radial-gradient(circle, var(--accent-glow) 0%, transparent 70%)',
           zIndex: 0,
-          filter: 'blur(60px)',
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '10%',
-          left: '-5%',
-          width: '400px',
-          height: '400px',
-          background: 'radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 70%)',
-          zIndex: 0,
-          filter: 'blur(50px)',
+          filter: 'blur(80px)',
           pointerEvents: 'none',
         }}
       />
@@ -54,11 +75,11 @@ export default function LandingPage({ onLogin, darkMode, onToggleDarkMode }) {
       <header
         style={{
           borderBottom: '1px solid var(--border-color)',
-          background: 'rgba(10, 10, 15, 0.4)',
+          background: darkMode ? 'rgba(11, 11, 15, 0.6)' : 'rgba(248, 249, 251, 0.6)',
           backdropFilter: 'blur(12px)',
-          position: 'sticky',
-          top: 0,
+          position: 'relative',
           zIndex: 10,
+          transition: 'background-color 0.4s ease, border-color 0.4s ease',
         }}
       >
         <div
@@ -72,7 +93,14 @@ export default function LandingPage({ onLogin, darkMode, onToggleDarkMode }) {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <img src="/logo.png" alt="SaaS Diary Logo" style={{ height: '32px', width: '32px' }} />
-            <span style={{ fontSize: '18px', fontWeight: 800, background: 'var(--gradient-1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <span
+              style={{
+                fontSize: '18px',
+                fontWeight: 800,
+                letterSpacing: '-0.5px',
+                color: darkMode ? '#ffffff' : '#0f172a',
+              }}
+            >
               SaaS Diary
             </span>
           </div>
@@ -87,13 +115,15 @@ export default function LandingPage({ onLogin, darkMode, onToggleDarkMode }) {
                 height: '38px',
                 borderRadius: '10px',
                 border: '1px solid var(--border-color)',
-                background: 'var(--bg-card)',
-                color: 'var(--text-secondary)',
+                background: darkMode ? '#16161f' : '#ffffff',
+                color: darkMode ? '#8888a0' : '#64748b',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
+                transition: 'background-color 0.4s ease, border-color 0.4s ease',
               }}
+              title="Toggle theme"
             >
               {darkMode ? '☀️' : '🌙'}
             </motion.button>
@@ -101,11 +131,17 @@ export default function LandingPage({ onLogin, darkMode, onToggleDarkMode }) {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="glow-btn"
               onClick={onLogin}
               style={{
-                fontSize: '13px',
+                background: 'var(--gradient-1)',
+                border: 'none',
+                color: 'white',
                 padding: '8px 18px',
+                borderRadius: '10px',
+                fontWeight: 600,
+                fontSize: '13px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px var(--accent-glow)',
               }}
             >
               Sign In
@@ -115,80 +151,64 @@ export default function LandingPage({ onLogin, darkMode, onToggleDarkMode }) {
       </header>
 
       {/* Hero Section */}
-      <main className="dashboard-container" style={{ position: 'relative', zIndex: 1, paddingTop: '80px', paddingBottom: '80px' }}>
+      <main
+        className="dashboard-container"
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto', padding: '40px 0' }}
         >
-          {/* Badge */}
-          <motion.div
-            variants={itemVariants}
+          {/* Headline */}
+          <h1
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              borderRadius: '100px',
-              background: 'var(--accent-glow)',
-              border: '1px solid var(--border-color)',
-              color: 'var(--accent-secondary)',
-              fontSize: '12px',
-              fontWeight: 600,
-              marginBottom: '28px',
-            }}
-          >
-            <Rocket size={14} />
-            <span>Developer-First Indie Hacker Diary</span>
-          </motion.div>
-
-          {/* Heading */}
-          <motion.h1
-            variants={itemVariants}
-            style={{
-              fontSize: 'clamp(32px, 5vw, 56px)',
-              fontWeight: 800,
-              lineHeight: 1.15,
-              letterSpacing: '-1px',
+              fontSize: 'clamp(40px, 6vw, 64px)',
+              fontWeight: 900,
+              lineHeight: 1.1,
+              letterSpacing: '-1.5px',
               marginBottom: '20px',
+              color: darkMode ? '#ffffff' : '#0f172a',
             }}
           >
-            Your SaaS Shipping Velocity,{' '}
-            <span className="gradient-text" style={{ background: 'var(--gradient-2)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Visualized.
-            </span>
-          </motion.h1>
+            Idea → Building → Shipped
+          </h1>
 
           {/* Subheading */}
-          <motion.p
-            variants={itemVariants}
+          <p
             style={{
-              fontSize: 'clamp(15px, 2vw, 18px)',
-              color: 'var(--text-secondary)',
-              lineHeight: 1.6,
-              marginBottom: '38px',
-              maxWidth: '640px',
+              fontSize: 'clamp(16px, 2.5vw, 19px)',
+              color: darkMode ? '#8888a0' : '#64748b',
+              lineHeight: 1.5,
+              marginBottom: '40px',
+              maxWidth: '540px',
               marginRight: 'auto',
               marginLeft: 'auto',
+              fontWeight: 450,
             }}
           >
-            Document your journey to $10k MRR. Track daily code logs, set milestones, view your shipping commitment heatmap, and manage your pipeline in one gorgeous page.
-          </motion.p>
+            Start with an idea, build it step by step, and ship it to the world.
+          </p>
 
-          {/* CTA Buttons */}
-          <motion.div
-            variants={itemVariants}
+          {/* CTA Area */}
+          <div
             style={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               gap: '16px',
-              marginBottom: '60px',
             }}
           >
             <motion.button
-              whileHover={{ scale: 1.03, boxShadow: '0 0 30px var(--accent-glow)' }}
+              whileHover={{ scale: 1.03, boxShadow: '0 0 35px var(--accent-glow)' }}
               whileTap={{ scale: 0.97 }}
               onClick={onLogin}
               style={{
@@ -202,7 +222,7 @@ export default function LandingPage({ onLogin, darkMode, onToggleDarkMode }) {
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
+                gap: '8px',
                 transition: 'box-shadow 0.3s ease',
               }}
             >
@@ -210,96 +230,20 @@ export default function LandingPage({ onLogin, darkMode, onToggleDarkMode }) {
               <ArrowRight size={18} />
             </motion.button>
 
-            <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: 'var(--text-muted)' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <CheckCircle2 size={14} style={{ color: 'var(--success)' }} /> No credit card required
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Lock size={14} /> Secure Firestore database
-              </span>
-            </div>
-          </motion.div>
-        </motion.div>
-
-        {/* Feature Cards Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.8 }}
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '24px',
-            marginTop: '40px',
-          }}
-        >
-          {/* Card 1 */}
-          <div className="glass-card" style={{ padding: '32px', position: 'relative', overflow: 'hidden' }}>
+            {/* Trust Text */}
             <div
               style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '10px',
-                background: 'rgba(99, 102, 241, 0.1)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--accent-primary)',
-                marginBottom: '20px',
+                gap: '6px',
+                fontSize: '13px',
+                color: darkMode ? '#555570' : '#94a3b8',
+                fontWeight: 500,
               }}
             >
-              <Activity size={22} />
+              <Lock size={13} />
+              <span>Secure Firestore database</span>
             </div>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '10px' }}>Commitment Heatmap</h3>
-            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              A GitHub-style contribution chart mapping every single day of your journey. Watch your shipping activity build consistency.
-            </p>
-          </div>
-
-          {/* Card 2 */}
-          <div className="glass-card" style={{ padding: '32px', position: 'relative', overflow: 'hidden' }}>
-            <div
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '10px',
-                background: 'rgba(6, 182, 212, 0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#06b6d4',
-                marginBottom: '20px',
-              }}
-            >
-              <Target size={22} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '10px' }}>Resolution Goals</h3>
-            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              Set custom ship targets, deadlined goals, or revenue metrics. Calculate percentage completion rates instantly.
-            </p>
-          </div>
-
-          {/* Card 3 */}
-          <div className="glass-card" style={{ padding: '32px', position: 'relative', overflow: 'hidden' }}>
-            <div
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '10px',
-                background: 'rgba(239, 68, 68, 0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ef4444',
-                marginBottom: '20px',
-              }}
-            >
-              <Shield size={22} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '10px' }}>Real-time Google Sync</h3>
-            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              No more losing data when you clear your cache. Log in securely with Google and keep your diary synced across your devices.
-            </p>
           </div>
         </motion.div>
       </main>
@@ -308,14 +252,14 @@ export default function LandingPage({ onLogin, darkMode, onToggleDarkMode }) {
       <footer
         style={{
           borderTop: '1px solid var(--border-color)',
-          padding: '40px 0',
-          marginTop: '80px',
-          fontSize: '13px',
-          color: 'var(--text-muted)',
+          padding: '30px 0',
+          fontSize: '12px',
+          color: darkMode ? '#44445c' : '#cbd5e1',
           textAlign: 'center',
+          transition: 'border-color 0.4s ease, color 0.4s ease',
         }}
       >
-        <p>© 2026 SaaS Diary. All rights reserved. Build and ship consistently.</p>
+        <p>© 2026 SaaS Diary. All rights reserved.</p>
       </footer>
     </div>
   );
