@@ -13,11 +13,34 @@ export default function Onboarding({ user, onComplete, darkMode }) {
     name: user?.displayName || '',
     startDate: todayStr,
     endDate: defaultEndDateStr,
-    goalType: 'both', // 'startups', 'revenue', 'both'
-    startupTarget: 10,
-    revenueTarget: 1000000, // ₹10 Lakhs
-    pace: 'monthly',
+    goalType: '', // start unselected
+    startupTarget: '', // start unselected
+    revenueTarget: '', // start unselected
+    pace: '', // start unselected
   });
+
+  const isNextDisabled = () => {
+    if (step === 1) return !formData.name.trim();
+    if (step === 2) return !formData.startDate;
+    if (step === 3) return !formData.endDate;
+    if (step === 4) return !formData.goalType;
+    if (step === 5) {
+      if (formData.goalType === 'startups') {
+        return !formData.startupTarget || isNaN(parseInt(formData.startupTarget));
+      }
+      if (formData.goalType === 'revenue') {
+        return !formData.revenueTarget || isNaN(parseInt(formData.revenueTarget));
+      }
+      if (formData.goalType === 'both') {
+        return (
+          !formData.startupTarget || isNaN(parseInt(formData.startupTarget)) ||
+          !formData.revenueTarget || isNaN(parseInt(formData.revenueTarget))
+        );
+      }
+    }
+    if (step === 6) return !formData.pace;
+    return false;
+  };
 
   const [isCompletedScreen, setIsCompletedScreen] = useState(false);
 
@@ -218,7 +241,11 @@ export default function Onboarding({ user, onComplete, darkMode }) {
                             type="number"
                             className="custom-input"
                             value={formData.revenueTarget}
-                            onChange={(e) => setFormData({ ...formData, revenueTarget: Math.max(0, parseInt(e.target.value) || 0) })}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setFormData({ ...formData, revenueTarget: val === '' ? '' : Math.max(0, parseInt(val) || 0) });
+                            }}
+                            placeholder="e.g. 100000"
                             style={{ fontSize: '18px', padding: '14px 18px 14px 38px' }}
                             autoFocus
                           />
@@ -233,7 +260,11 @@ export default function Onboarding({ user, onComplete, darkMode }) {
                           type="number"
                           className="custom-input"
                           value={formData.startupTarget}
-                          onChange={(e) => setFormData({ ...formData, startupTarget: Math.max(0, parseInt(e.target.value) || 0) })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFormData({ ...formData, startupTarget: val === '' ? '' : Math.max(0, parseInt(val) || 0) });
+                          }}
+                          placeholder="e.g. 12"
                           style={{ fontSize: '18px', padding: '14px 18px' }}
                           autoFocus
                         />
@@ -250,7 +281,11 @@ export default function Onboarding({ user, onComplete, darkMode }) {
                                 type="number"
                                 className="custom-input"
                                 value={formData.revenueTarget}
-                                onChange={(e) => setFormData({ ...formData, revenueTarget: Math.max(0, parseInt(e.target.value) || 0) })}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setFormData({ ...formData, revenueTarget: val === '' ? '' : Math.max(0, parseInt(val) || 0) });
+                                }}
+                                placeholder="e.g. 500000"
                                 style={{ fontSize: '18px', padding: '14px 18px 14px 38px' }}
                               />
                             </div>
@@ -324,18 +359,18 @@ export default function Onboarding({ user, onComplete, darkMode }) {
               )}
 
               <motion.button
-                whileHover={{ scale: 1.02, boxShadow: '0 0 20px var(--accent-glow)' }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={!isNextDisabled() ? { scale: 1.02, boxShadow: '0 0 20px var(--accent-glow)' } : {}}
+                whileTap={!isNextDisabled() ? { scale: 0.98 } : {}}
                 onClick={handleNext}
-                disabled={step === 1 && !formData.name.trim()}
+                disabled={isNextDisabled()}
                 style={{
                   background: 'var(--gradient-1)',
                   color: 'white',
                   border: 'none',
                   padding: '14px 28px',
                   borderRadius: '10px',
-                  cursor: (step === 1 && !formData.name.trim()) ? 'not-allowed' : 'pointer',
-                  opacity: (step === 1 && !formData.name.trim()) ? 0.6 : 1,
+                  cursor: isNextDisabled() ? 'not-allowed' : 'pointer',
+                  opacity: isNextDisabled() ? 0.6 : 1,
                   fontSize: '14px',
                   fontWeight: 700,
                   display: 'flex',
