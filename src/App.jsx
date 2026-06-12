@@ -56,8 +56,8 @@ export default function App() {
   // 1. Auth state listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
       if (u) {
+        setLoading(true);
         try {
           const docRef = doc(db, 'users', u.uid);
           const docSnap = await getDoc(docRef);
@@ -70,6 +70,9 @@ export default function App() {
         } catch (err) {
           console.error('Error loading Firestore data on login:', err);
         }
+        setUser(u);
+      } else {
+        setUser(null);
       }
       setLoading(false);
     });
@@ -96,6 +99,7 @@ export default function App() {
 
   // 3. Local/Cloud save triggers (outbound changes)
   useEffect(() => {
+    if (loading) return;
     if (state.isOnboarded !== true) return;
     saveState(state);
     if (user) {
@@ -108,22 +112,29 @@ export default function App() {
       };
       saveToFirestore();
     }
-  }, [state, user]);
+  }, [state, user, loading]);
 
   const handleLogin = useCallback(async () => {
     try {
+      setLoading(true);
       await signInWithPopup(auth, googleProvider);
     } catch (err) {
       console.error('Error signing in with Google:', err);
+      setLoading(false);
     }
   }, []);
 
   const handleLogout = useCallback(async () => {
     try {
+      setLoading(true);
       await signOut(auth);
-      setState(loadState()); // fallback to local state
+      // Clean up state on logout to prevent state bleeding
+      const local = loadState();
+      setState({ ...local, isOnboarded: undefined });
     } catch (err) {
       console.error('Error signing out:', err);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
