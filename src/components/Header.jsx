@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Rocket, Sun, Moon, User } from 'lucide-react';
 
-export default function Header({ darkMode, onToggleDarkMode, endDate, onEditEndDate }) {
+export default function Header({ darkMode, onToggleDarkMode, endDate, onEditEndDate, user, onLogin, onLogout }) {
   const formattedEndDate = (() => {
     try {
       const parts = endDate.split('-');
@@ -119,27 +119,70 @@ export default function Header({ darkMode, onToggleDarkMode, endDate, onEditEndD
               {darkMode ? <Sun size={16} /> : <Moon size={16} />}
             </motion.button>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 10,
-                background: 'var(--gradient-2)',
-                border: 'none',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                boxShadow: '0 4px 15px rgba(99, 102, 241, 0.3)',
-              }}
-              aria-label="Profile settings"
-              id="profile-btn"
-            >
-              <User size={16} />
-            </motion.button>
+            {user ? (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  if (window.confirm('Do you want to sign out?')) {
+                    onLogout();
+                  }
+                }}
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 10,
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-card)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  overflow: 'hidden',
+                  padding: 0,
+                  boxShadow: '0 4px 15px var(--accent-glow)',
+                }}
+                title={`Signed in as ${user.displayName}. Click to logout.`}
+                id="profile-btn"
+              >
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <User size={16} />
+                )}
+              </motion.button>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onLogin}
+                style={{
+                  height: 38,
+                  borderRadius: 10,
+                  background: 'var(--gradient-2)',
+                  border: 'none',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '0 16px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  boxShadow: '0 4px 15px rgba(99, 102, 241, 0.3)',
+                }}
+                id="login-btn"
+              >
+                <User size={15} />
+                <span>Sync with Google</span>
+              </motion.button>
+            )}
           </div>
         </div>
       </div>

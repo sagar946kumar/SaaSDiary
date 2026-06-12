@@ -14,6 +14,10 @@ import {
   formatCurrency,
 } from './utils/calculations.js';
 
+import { auth, googleProvider, db } from './firebase.js';
+import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+
 import Header from './components/Header.jsx';
 import Progress from './components/Progress.jsx';
 import Heatmap from './components/Heatmap.jsx';
@@ -26,6 +30,9 @@ export default function App() {
     const loaded = loadState();
     return checkExpiredGoals(loaded);
   });
+
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [insightGoal, setInsightGoal] = useState(null);
   const [isEditEndDateOpen, setIsEditEndDateOpen] = useState(false);
@@ -43,6 +50,79 @@ export default function App() {
   const [isEditNetworthOpen, setIsEditNetworthOpen] = useState(false);
   const [tempNetworth, setTempNetworth] = useState(state.currentRevenue || 0);
 
+  // 1. Auth state listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      if (u) {
+        try {
+          const docRef = doc(db, 'users', u.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setState(docSnap.data());
+          } else {
+            // First time login: seed cloud database with current local storage state
+            await setDoc(docRef, state);
+          }
+        } catch (err) {
+          console.error('Error loading Firestore data on login:', err);
+        }
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Real-time Firestore document sync (inbound changes)
+  useEffect(() => {
+    if (!user) return;
+    const docRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const remoteData = docSnap.data();
+        setState((prev) => {
+          if (JSON.stringify(prev) !== JSON.stringify(remoteData)) {
+            return remoteData;
+          }
+          return prev;
+        });
+      }
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  // 3. Local/Cloud save triggers (outbound changes)
+  useEffect(() => {
+    saveState(state);
+    if (user) {
+      const saveToFirestore = async () => {
+        try {
+          await setDoc(doc(db, 'users', user.uid), state);
+        } catch (err) {
+          console.error('Error saving state to Firestore:', err);
+        }
+      };
+      saveToFirestore();
+    }
+  }, [state, user]);
+
+  const handleLogin = useCallback(async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      console.error('Error signing in with Google:', err);
+    }
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await signOut(auth);
+      setState(loadState()); // fallback to local state
+    } catch (err) {
+      console.error('Error signing out:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (state.endDate) {
       setTempEndDate(state.endDate);
@@ -52,11 +132,6 @@ export default function App() {
   useEffect(() => {
     setTempNetworth(state.currentRevenue);
   }, [state.currentRevenue]);
-
-  // Persist state to localStorage on every change
-  useEffect(() => {
-    saveState(state);
-  }, [state]);
 
   // ─── State update helpers ───────────────────────────────────────────────
 
@@ -159,6 +234,9 @@ export default function App() {
         onToggleDarkMode={handleToggleDarkMode}
         endDate={state.endDate || '2030-12-31'}
         onEditEndDate={() => setIsEditEndDateOpen(true)}
+        user={user}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
       />
 
       <main className="dashboard-container" style={{ paddingBottom: '60px' }}>
