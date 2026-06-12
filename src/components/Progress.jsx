@@ -2,17 +2,17 @@ import { motion } from 'framer-motion';
 import { Calendar, Clock, TrendingUp, Zap } from 'lucide-react';
 import { getProgressData, formatCurrency } from '../utils/calculations.js';
 
-export default function Progress({ timeMode, onTimeModeChange, startups, endDate, currentRevenue, onEditNetworth }) {
-  const progress = getProgressData(timeMode, endDate);
+export default function Progress({ timeMode, onTimeModeChange, startups, endDate, startDate, goalType, currentRevenue, onEditNetworth }) {
+  const progress = getProgressData(timeMode, endDate, startDate);
 
   const completedStartups = startups.filter((s) => s.status === 'completed').length;
 
   const modeLabels = { days: 'Days', weeks: 'Weeks', months: 'Months' };
 
   const getSubLabel = () => {
-    if (timeMode === 'days') return '122nd day going on';
-    if (timeMode === 'weeks') return '18th week going on';
-    if (timeMode === 'months') return '5th month going on';
+    if (timeMode === 'days') return `${progress.elapsed}th day going on`;
+    if (timeMode === 'weeks') return `${progress.elapsed}th week going on`;
+    if (timeMode === 'months') return `${progress.elapsed}th month going on`;
     return '';
   };
 
@@ -41,6 +41,12 @@ export default function Progress({ timeMode, onTimeModeChange, startups, endDate
     },
   ];
 
+  const filteredStats = stats.filter((stat) => {
+    if (stat.label === 'Startups' && goalType === 'revenue') return false;
+    if (stat.label === 'Total Earning' && goalType === 'startups') return false;
+    return true;
+  });
+
   return (
     <section style={{ marginTop: '24px' }} id="progress-section">
       {/* Section header with dropdown */}
@@ -64,7 +70,7 @@ export default function Progress({ timeMode, onTimeModeChange, startups, endDate
 
       {/* Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
-        {stats.map((stat, i) => (
+        {filteredStats.map((stat, i) => (
           <motion.div
             key={stat.label}
             className="glass-card"

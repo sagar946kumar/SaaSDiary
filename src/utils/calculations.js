@@ -11,9 +11,18 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { DEFAULT_STATE } from '../data/data.js';
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// Helper to safely parse custom dates
+function parseDate(dateStr, defaultDate) {
+  if (!dateStr) return defaultDate;
+  try {
+    return new Date(dateStr);
+  } catch (e) {
+    return defaultDate;
+  }
+}
 
-export const START_DATE = new Date(2026, 1, 10); // Feb 10, 2026
+// Feb 10, 2026
+export const START_DATE = new Date(2026, 1, 10);
 export const END_DATE = new Date(2030, 11, 31);  // Dec 31, 2030
 export const TODAY = new Date();
 
@@ -21,29 +30,31 @@ const STORAGE_KEY = 'sagar-saas-builder-state';
 
 // ─── Progress calculations ──────────────────────────────────────────────────
 
-export function getOverallTimelinePercent(endDateStr) {
-  const endDate = endDateStr ? new Date(endDateStr) : END_DATE;
-  const totalDays = differenceInDays(endDate, START_DATE) + 1;
-  const elapsedDays = Math.max(0, differenceInDays(TODAY, START_DATE) + 1);
+export function getOverallTimelinePercent(endDateStr, startDateStr) {
+  const startDate = parseDate(startDateStr, START_DATE);
+  const endDate = parseDate(endDateStr, END_DATE);
+  const totalDays = differenceInDays(endDate, startDate) + 1;
+  const elapsedDays = Math.max(0, differenceInDays(TODAY, startDate) + 1);
   return Math.min((elapsedDays / totalDays) * 100, 100);
 }
 
-export function getProgressData(mode, endDateStr) {
-  const endDate = endDateStr ? new Date(endDateStr) : END_DATE;
-  const totalDays = differenceInDays(endDate, START_DATE) + 1;
-  const elapsedDays = Math.max(0, differenceInDays(TODAY, START_DATE) + 1);
+export function getProgressData(mode, endDateStr, startDateStr) {
+  const startDate = parseDate(startDateStr, START_DATE);
+  const endDate = parseDate(endDateStr, END_DATE);
+  const totalDays = differenceInDays(endDate, startDate) + 1;
+  const elapsedDays = Math.max(0, differenceInDays(TODAY, startDate) + 1);
 
   switch (mode) {
     case 'days':
       return { elapsed: Math.min(elapsedDays, totalDays), total: totalDays };
     case 'weeks': {
-      const totalWeeks = eachWeekOfInterval({ start: START_DATE, end: endDate }, { weekStartsOn: 1 }).length;
+      const totalWeeks = eachWeekOfInterval({ start: startDate, end: endDate }, { weekStartsOn: 1 }).length;
       const elapsedWeeks = Math.min(Math.floor(elapsedDays / 7), totalWeeks);
       return { elapsed: elapsedWeeks, total: totalWeeks };
     }
     case 'months': {
-      const totalMonths = differenceInMonths(endDate, START_DATE) + 1;
-      const elapsedMonths = Math.min(differenceInMonths(TODAY, START_DATE) + 1, totalMonths);
+      const totalMonths = differenceInMonths(endDate, startDate) + 1;
+      const elapsedMonths = Math.min(differenceInMonths(TODAY, startDate) + 1, totalMonths);
       return { elapsed: elapsedMonths, total: totalMonths };
     }
     default:
@@ -53,9 +64,9 @@ export function getProgressData(mode, endDateStr) {
 
 // ─── Heatmap data ───────────────────────────────────────────────────────────
 
-export function getHeatmapData(mode, endDateStr) {
-  const startDate = START_DATE;
-  const endDate = endDateStr ? new Date(endDateStr) : END_DATE;
+export function getHeatmapData(mode, endDateStr, startDateStr) {
+  const startDate = parseDate(startDateStr, START_DATE);
+  const endDate = parseDate(endDateStr, END_DATE);
 
   switch (mode) {
     case 'days': {

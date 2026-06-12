@@ -3,10 +3,10 @@ import { motion } from 'framer-motion';
 import { Grid3X3 } from 'lucide-react';
 import { getHeatmapData } from '../utils/calculations.js';
 
-export default function Heatmap({ timeMode, notes, onCellClick, endDate }) {
+export default function Heatmap({ timeMode, notes, onCellClick, endDate, startDate }) {
   const [hoveredCell, setHoveredCell] = useState(null);
 
-  const data = useMemo(() => getHeatmapData(timeMode, endDate), [timeMode, endDate]);
+  const data = useMemo(() => getHeatmapData(timeMode, endDate, startDate), [timeMode, endDate, startDate]);
 
   const cellSize = timeMode === 'days' ? 10 : timeMode === 'weeks' ? 18 : 28;
   const gap = 3;

@@ -1,7 +1,25 @@
 import { motion } from 'framer-motion';
 import { Rocket, Sun, Moon, User } from 'lucide-react';
 
-export default function Header({ darkMode, onToggleDarkMode, endDate, onEditEndDate, user, onLogin, onLogout }) {
+export default function Header({ darkMode, onToggleDarkMode, endDate, onEditEndDate, user, onLogin, onLogout, name, goalType, startDate }) {
+  const headerTitle = name
+    ? (goalType === 'revenue' ? `${name}’s ₹Goal Journey` : `${name}’s Build Journey`)
+    : 'SaaS Diary';
+
+  const formattedStartDate = (() => {
+    try {
+      if (!startDate) return '10 Feb 2026';
+      const parts = startDate.split('-');
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const day = parseInt(parts[2], 10);
+      const monthIdx = parseInt(parts[1], 10) - 1;
+      const year = parts[0];
+      return `${day} ${months[monthIdx]} ${year}`;
+    } catch (e) {
+      return '10 Feb 2026';
+    }
+  })();
+
   const formattedEndDate = (() => {
     try {
       const parts = endDate.split('-');
@@ -62,10 +80,10 @@ export default function Header({ darkMode, onToggleDarkMode, endDate, onEditEndD
             </div>
             <div>
               <h1 style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.5px', lineHeight: 1.2 }}>
-                <span className="gradient-text">SaaS Diary</span>
+                <span className="gradient-text">{headerTitle}</span>
               </h1>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.3px', marginTop: '4px' }}>
-                <span>Started: <span style={{ color: 'var(--text-secondary)' }}>10 Feb 2026</span></span>
+                <span>Started: <span style={{ color: 'var(--text-secondary)' }}>{formattedStartDate}</span></span>
                 <span 
                   onClick={onEditEndDate} 
                   style={{ 

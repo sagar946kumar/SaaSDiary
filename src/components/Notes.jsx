@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { StickyNote, Plus, Edit3, Trash2, X, CheckSquare, Square } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
-export default function Notes({ notes, onAddNote, onEditNote, onDeleteNote }) {
+export default function Notes({ notes, onAddNote, onEditNote, onDeleteNote, placeholder }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
   const [preselectedDate, setPreselectedDate] = useState(null);
@@ -180,7 +180,7 @@ export default function Notes({ notes, onAddNote, onEditNote, onDeleteNote }) {
                   className="custom-textarea"
                   value={noteContent}
                   onChange={(e) => setNoteContent(e.target.value)}
-                  placeholder="What did you work on today?"
+                  placeholder={placeholder || "What did you work on today?"}
                 />
               </div>
 

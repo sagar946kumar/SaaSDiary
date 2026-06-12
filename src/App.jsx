@@ -25,6 +25,8 @@ import Startups from './components/Startups.jsx';
 import Goals from './components/Goals.jsx';
 import Notes from './components/Notes.jsx';
 import LandingPage from './components/LandingPage.jsx';
+import Onboarding from './components/Onboarding.jsx';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
   const [state, setState] = useState(() => {
@@ -62,8 +64,8 @@ export default function App() {
           if (docSnap.exists()) {
             setState(docSnap.data());
           } else {
-            // First time login: seed cloud database with current local storage state
-            await setDoc(docRef, state);
+            // First time login: mark isOnboarded as false to trigger onboarding
+            setState((prev) => ({ ...prev, isOnboarded: false }));
           }
         } catch (err) {
           console.error('Error loading Firestore data on login:', err);
@@ -94,6 +96,7 @@ export default function App() {
 
   // 3. Local/Cloud save triggers (outbound changes)
   useEffect(() => {
+    if (state.isOnboarded === false) return;
     saveState(state);
     if (user) {
       const saveToFirestore = async () => {
@@ -225,6 +228,75 @@ export default function App() {
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] } },
   };
 
+  const handleOnboardingComplete = useCallback(async (onboardingData) => {
+    const { name, startDate, endDate, goalType, startupTarget, revenueTarget, pace } = onboardingData;
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const totalMonths = Math.max(1, (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) + 1);
+    const startupMonthlyTarget = Math.max(1, Math.round(startupTarget / totalMonths));
+
+    const generatedGoals = [];
+    if (goalType === 'startups' || goalType === 'both') {
+      generatedGoals.push({
+        id: uuidv4(),
+        title: `Ship ${startupMonthlyTarget} startups/month`,
+        target: startupMonthlyTarget,
+        current: 0,
+        deadline: endDate,
+        type: 'monthly',
+        unit: 'startups',
+      });
+    }
+
+    if (goalType === 'revenue' || goalType === 'both') {
+      generatedGoals.push({
+        id: uuidv4(),
+        title: `Earn ${formatCurrency(revenueTarget)}`,
+        target: revenueTarget,
+        current: 0,
+        deadline: endDate,
+        type: 'fixed',
+        unit: '₹',
+      });
+    }
+
+    const day1Note = {
+      id: uuidv4(),
+      date: startDate,
+      content: 'Journey started 🚀',
+      checklist: [],
+    };
+
+    const newState = {
+      timeMode: 'days',
+      darkMode: state.darkMode,
+      currentRevenue: 0,
+      startups: [],
+      goals: generatedGoals,
+      expiredGoals: [],
+      notes: [day1Note],
+      startDate,
+      endDate,
+      goalType,
+      startupTarget,
+      revenueTarget,
+      pace,
+      name,
+      isOnboarded: true,
+    };
+
+    setState(newState);
+
+    if (user) {
+      try {
+        await setDoc(doc(db, 'users', user.uid), newState);
+      } catch (err) {
+        console.error('Error saving onboarding data to Firestore:', err);
+      }
+    }
+  }, [user, state.darkMode]);
+
   if (loading) {
     return (
       <div
@@ -268,6 +340,16 @@ export default function App() {
     );
   }
 
+  if (state.isOnboarded === false) {
+    return (
+      <Onboarding
+        user={user}
+        onComplete={handleOnboardingComplete}
+        darkMode={state.darkMode}
+      />
+    );
+  }
+
   return (
     <div
       data-theme={state.darkMode ? 'dark' : 'light'}
@@ -281,6 +363,9 @@ export default function App() {
         user={user}
         onLogin={handleLogin}
         onLogout={handleLogout}
+        name={state.name}
+        goalType={state.goalType}
+        startDate={state.startDate}
       />
 
       <main className="dashboard-container" style={{ paddingBottom: '60px' }}>
@@ -293,6 +378,8 @@ export default function App() {
               onTimeModeChange={handleTimeModeChange}
               startups={state.startups}
               endDate={state.endDate || '2030-12-31'}
+              startDate={state.startDate}
+              goalType={state.goalType}
               currentRevenue={state.currentRevenue}
               onEditNetworth={() => setIsEditNetworthOpen(true)}
             />
@@ -305,6 +392,7 @@ export default function App() {
               notes={state.notes}
               onCellClick={handleHeatmapClick}
               endDate={state.endDate || '2030-12-31'}
+              startDate={state.startDate}
             />
           </motion.div>
 
@@ -319,13 +407,15 @@ export default function App() {
           </motion.div>
 
           {/* 4. Startups Pipeline */}
-          <motion.div variants={itemVariants}>
-            <Startups
-              startups={state.startups}
-              onAddStartup={handleAddStartup}
-              onMoveStartup={handleMoveStartup}
-            />
-          </motion.div>
+          {state.goalType !== 'revenue' && (
+            <motion.div variants={itemVariants}>
+              <Startups
+                startups={state.startups}
+                onAddStartup={handleAddStartup}
+                onMoveStartup={handleMoveStartup}
+              />
+            </motion.div>
+          )}
 
           {/* 5. Daily Notes */}
           <motion.div variants={itemVariants}>
@@ -335,6 +425,13 @@ export default function App() {
               onAddNote={handleAddNote}
               onEditNote={handleAddNote}
               onDeleteNote={handleDeleteNote}
+              placeholder={
+                state.goalType === 'startups'
+                  ? 'What did you ship today?'
+                  : state.goalType === 'revenue'
+                  ? 'What did you earn today?'
+                  : 'What did you ship or earn today?'
+              }
             />
           </motion.div>
 
