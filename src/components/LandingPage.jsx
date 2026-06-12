@@ -171,12 +171,13 @@ export default function LandingPage({ onLogin, darkMode, onToggleDarkMode }) {
           {/* Headline */}
           <h1
             style={{
-              fontSize: 'clamp(40px, 6vw, 64px)',
+              fontSize: 'clamp(24px, 7vw, 64px)',
               fontWeight: 900,
               lineHeight: 1.1,
               letterSpacing: '-1.5px',
               marginBottom: '20px',
               color: darkMode ? '#ffffff' : '#0f172a',
+              whiteSpace: 'nowrap',
             }}
           >
             Idea → Building → Shipped
@@ -237,11 +238,11 @@ export default function LandingPage({ onLogin, darkMode, onToggleDarkMode }) {
                 alignItems: 'center',
                 gap: '6px',
                 fontSize: '13px',
-                color: darkMode ? '#555570' : '#94a3b8',
-                fontWeight: 500,
+                color: darkMode ? '#8888a0' : '#475569',
+                fontWeight: 700,
               }}
             >
-              <Lock size={13} />
+              <Lock size={13} strokeWidth={2.5} />
               <span>Secure Firestore database</span>
             </div>
           </div>
@@ -254,7 +255,8 @@ export default function LandingPage({ onLogin, darkMode, onToggleDarkMode }) {
           borderTop: '1px solid var(--border-color)',
           padding: '30px 0',
           fontSize: '12px',
-          color: darkMode ? '#44445c' : '#cbd5e1',
+          color: darkMode ? '#44445c' : '#475569',
+          fontWeight: 700,
           textAlign: 'center',
           transition: 'border-color 0.4s ease, color 0.4s ease',
         }}
