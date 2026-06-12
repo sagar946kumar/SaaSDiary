@@ -24,6 +24,7 @@ import Heatmap from './components/Heatmap.jsx';
 import Startups from './components/Startups.jsx';
 import Goals from './components/Goals.jsx';
 import Notes from './components/Notes.jsx';
+import LandingPage from './components/LandingPage.jsx';
 
 export default function App() {
   const [state, setState] = useState(() => {
@@ -223,6 +224,49 @@ export default function App() {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] } },
   };
+
+  if (loading) {
+    return (
+      <div
+        data-theme={state.darkMode ? 'dark' : 'light'}
+        style={{
+          minHeight: '100vh',
+          background: 'var(--bg-primary)',
+          color: 'var(--text-primary)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: '16px',
+        }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+          style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            border: '3px solid var(--border-color)',
+            borderTopColor: 'var(--accent-primary)',
+          }}
+        />
+        <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+          Loading your SaaS Diary...
+        </span>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <LandingPage
+        onLogin={handleLogin}
+        darkMode={state.darkMode}
+        onToggleDarkMode={handleToggleDarkMode}
+      />
+    );
+  }
 
   return (
     <div
