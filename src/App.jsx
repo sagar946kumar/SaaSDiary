@@ -290,9 +290,7 @@ export default function App() {
 
   const handleHeatmapClick = useCallback(
     (date) => {
-      // Scroll to notes section for this date
-      const el = document.getElementById('notes-section');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      // Do nothing
     },
     []
   );

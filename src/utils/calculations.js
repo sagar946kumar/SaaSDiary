@@ -62,6 +62,12 @@ export function getProgressData(mode, endDateStr, startDateStr) {
   }
 }
 
+function getOrdinal(n) {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
 // ─── Heatmap data ───────────────────────────────────────────────────────────
 
 export function getHeatmapData(mode, endDateStr, startDateStr) {
@@ -71,12 +77,12 @@ export function getHeatmapData(mode, endDateStr, startDateStr) {
   switch (mode) {
     case 'days': {
       const days = eachDayOfInterval({ start: startDate, end: endDate });
-      return days.map((d) => {
+      return days.map((d, idx) => {
         const dateStr = format(d, 'yyyy-MM-dd');
         const isSpent = d <= TODAY;
         return {
           date: dateStr,
-          displayDate: format(d, 'MMM d, yyyy'),
+          displayDate: `"${getOrdinal(idx + 1)}" day, ${format(d, 'd MMMM yyyy')}`,
           active: isSpent,
           day: d.getDay(),
         };
@@ -87,12 +93,12 @@ export function getHeatmapData(mode, endDateStr, startDateStr) {
         { start: startDate, end: endDate },
         { weekStartsOn: 1 }
       );
-      return weeks.map((w) => {
+      return weeks.map((w, idx) => {
         const wEnd = endOfWeek(w, { weekStartsOn: 1 });
         const isSpent = w <= TODAY;
         return {
           date: format(w, 'yyyy-MM-dd'),
-          displayDate: `${format(w, 'MMM d')} – ${format(wEnd, 'MMM d, yyyy')}`,
+          displayDate: `"${getOrdinal(idx + 1)}" week, ${format(w, 'd MMMM')} - ${format(wEnd, 'd MMMM, yyyy')}`,
           active: isSpent,
           day: 0,
         };
@@ -100,11 +106,12 @@ export function getHeatmapData(mode, endDateStr, startDateStr) {
     }
     case 'months': {
       const months = eachMonthOfInterval({ start: startDate, end: endDate });
-      return months.map((m) => {
+      return months.map((m, idx) => {
         const isSpent = m <= TODAY || format(m, 'yyyy-MM') === format(TODAY, 'yyyy-MM');
         return {
           date: format(m, 'yyyy-MM-dd'),
-          displayDate: format(m, 'MMMM yyyy'),
+          displayDate: `"${getOrdinal(idx + 1)}" month, ${format(m, 'MMMM yyyy')}`,
+          monthLabel: format(m, 'MMM'),
           active: isSpent,
           day: 0,
         };

@@ -3,7 +3,7 @@ import { Rocket, Sun, Moon, User } from 'lucide-react';
 
 export default function Header({ darkMode, onToggleDarkMode, endDate, onEditJourney, user, onLogin, onLogout, name, goalType, startDate }) {
   const headerTitle = name
-    ? (goalType === 'revenue' ? `${name}’s ₹Goal Journey` : `${name}’s Build Journey`)
+    ? (goalType === 'revenue' ? `${name}’s ₹Goal Journey` : `${name}’s SaaS Diary`)
     : 'SaaS Diary';
 
   const formattedStartDate = (() => {
@@ -93,7 +93,7 @@ export default function Header({ darkMode, onToggleDarkMode, endDate, onEditJour
               >
                 <span className="gradient-text">{headerTitle}</span>
               </h1>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.3px', marginTop: '4px' }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '11px', fontWeight: 600, letterSpacing: '0.3px', marginTop: '6px' }}>
                 <span 
                   onClick={onEditJourney}
                   style={{
@@ -101,19 +101,23 @@ export default function Header({ darkMode, onToggleDarkMode, endDate, onEditJour
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '4px',
-                    background: 'rgba(99, 102, 241, 0.05)',
-                    padding: '2px 8px',
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.12))',
+                    border: '1px solid rgba(99, 102, 241, 0.35)',
+                    boxShadow: '0 0 8px rgba(99, 102, 241, 0.1)',
+                    padding: '3px 10px',
                     borderRadius: '100px',
-                    color: 'var(--text-secondary)',
-                    transition: 'all 0.2s',
+                    color: 'var(--accent-primary)',
+                    transition: 'all 0.25s ease',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(99, 102, 241, 0.15)';
-                    e.currentTarget.style.color = 'var(--text-primary)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(168, 85, 247, 0.22))';
+                    e.currentTarget.style.boxShadow = '0 0 12px rgba(99, 102, 241, 0.2)';
+                    e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.55)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(99, 102, 241, 0.05)';
-                    e.currentTarget.style.color = 'var(--text-secondary)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.12))';
+                    e.currentTarget.style.boxShadow = '0 0 8px rgba(99, 102, 241, 0.1)';
+                    e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.35)';
                   }}
                 >
                   Started: {formattedStartDate}
@@ -125,19 +129,23 @@ export default function Header({ darkMode, onToggleDarkMode, endDate, onEditJour
                     display: 'inline-flex', 
                     alignItems: 'center', 
                     gap: '4px',
-                    background: 'rgba(99, 102, 241, 0.1)',
-                    padding: '2px 8px',
+                    background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.12), rgba(239, 68, 68, 0.12))',
+                    border: '1px solid rgba(236, 72, 153, 0.35)',
+                    boxShadow: '0 0 8px rgba(236, 72, 153, 0.1)',
+                    padding: '3px 10px',
                     borderRadius: '100px',
                     color: 'var(--accent-secondary)',
-                    transition: 'all 0.2s',
+                    transition: 'all 0.25s ease',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)';
-                    e.currentTarget.style.color = 'var(--text-primary)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(236, 72, 153, 0.22), rgba(239, 68, 68, 0.22))';
+                    e.currentTarget.style.boxShadow = '0 0 12px rgba(236, 72, 153, 0.2)';
+                    e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.55)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
-                    e.currentTarget.style.color = 'var(--accent-secondary)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(236, 72, 153, 0.12), rgba(239, 68, 68, 0.12))';
+                    e.currentTarget.style.boxShadow = '0 0 8px rgba(236, 72, 153, 0.1)';
+                    e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.35)';
                   }}
                 >
                   Committed till: {formattedEndDate}
