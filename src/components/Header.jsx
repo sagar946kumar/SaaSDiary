@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Rocket, Sun, Moon, User } from 'lucide-react';
 
-export default function Header({ darkMode, onToggleDarkMode, endDate, onEditEndDate, user, onLogin, onLogout, name, goalType, startDate }) {
+export default function Header({ darkMode, onToggleDarkMode, endDate, onEditJourney, user, onLogin, onLogout, name, goalType, startDate }) {
   const headerTitle = name
     ? (goalType === 'revenue' ? `${name}’s ₹Goal Journey` : `${name}’s Build Journey`)
     : 'SaaS Diary';
@@ -79,13 +79,47 @@ export default function Header({ darkMode, onToggleDarkMode, endDate, onEditEndD
               />
             </div>
             <div>
-              <h1 style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.5px', lineHeight: 1.2 }}>
+              <h1 
+                onClick={onEditJourney}
+                style={{ 
+                  fontSize: '18px', 
+                  fontWeight: 800, 
+                  letterSpacing: '-0.5px', 
+                  lineHeight: 1.2,
+                  cursor: 'pointer',
+                  display: 'inline-block'
+                }}
+                title="Click to edit journey details"
+              >
                 <span className="gradient-text">{headerTitle}</span>
               </h1>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.3px', marginTop: '4px' }}>
-                <span>Started: <span style={{ color: 'var(--text-secondary)' }}>{formattedStartDate}</span></span>
                 <span 
-                  onClick={onEditEndDate} 
+                  onClick={onEditJourney}
+                  style={{
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: 'rgba(99, 102, 241, 0.05)',
+                    padding: '2px 8px',
+                    borderRadius: '100px',
+                    color: 'var(--text-secondary)',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(99, 102, 241, 0.15)';
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(99, 102, 241, 0.05)';
+                    e.currentTarget.style.color = 'var(--text-secondary)';
+                  }}
+                >
+                  Started: {formattedStartDate}
+                </span>
+                <span 
+                  onClick={onEditJourney} 
                   style={{ 
                     cursor: 'pointer', 
                     display: 'inline-flex', 
@@ -106,7 +140,7 @@ export default function Header({ darkMode, onToggleDarkMode, endDate, onEditEndD
                     e.currentTarget.style.color = 'var(--accent-secondary)';
                   }}
                 >
-                  Committed till: {formattedEndDate} ✏️
+                  Committed till: {formattedEndDate}
                 </span>
               </div>
             </div>

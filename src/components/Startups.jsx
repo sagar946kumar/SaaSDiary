@@ -8,7 +8,7 @@ const stages = [
   { key: 'completed', label: 'Completed', icon: <CheckCircle2 size={14} />, color: '#22c55e', bgColor: '#22c55e15' },
 ];
 
-export default function Startups({ startups, onAddStartup, onMoveStartup }) {
+export default function Startups({ startups, onAddStartup, onMoveStartup, onEditStartup }) {
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverStage, setDragOverStage] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -127,9 +127,12 @@ export default function Startups({ startups, onAddStartup, onMoveStartup }) {
                       animate={{ opacity: draggedId === startup.id ? 0.4 : 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9 }}
                       transition={{ duration: 0.2 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
                       draggable
                       onDragStart={(e) => handleDragStart(e, startup.id)}
                       onDragEnd={handleDragEnd}
+                      onClick={() => onEditStartup && onEditStartup(startup)}
                       className="drag-item"
                       style={{
                         background: 'var(--bg-secondary)',
@@ -138,6 +141,8 @@ export default function Startups({ startups, onAddStartup, onMoveStartup }) {
                         padding: '12px 14px',
                         marginBottom: '8px',
                         borderLeft: `3px solid ${stage.color}`,
+                        cursor: 'pointer',
+                        transition: 'box-shadow 0.2s',
                       }}
                     >
                       <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '6px' }}>{startup.name}</div>

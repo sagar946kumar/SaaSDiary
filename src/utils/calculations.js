@@ -247,13 +247,16 @@ export function addGoal(state, goal) {
 }
 
 export function addNote(state, note) {
-  const idx = state.notes.findIndex((n) => n.date === note.date);
-  if (idx >= 0) {
-    const updated = [...state.notes];
-    updated[idx] = { ...updated[idx], ...note };
-    return { ...state, notes: updated };
+  if (note.id) {
+    return {
+      ...state,
+      notes: state.notes.map((n) => (n.id === note.id ? { ...n, ...note } : n)),
+    };
   }
-  return { ...state, notes: [...state.notes, { ...note, id: uuidv4() }] };
+  return {
+    ...state,
+    notes: [...state.notes, { ...note, id: uuidv4(), createdAt: Date.now() }],
+  };
 }
 
 export function deleteNote(state, noteId) {
@@ -280,3 +283,40 @@ export function checkExpiredGoals(state) {
     expiredGoals: [...state.expiredGoals, ...expired],
   };
 }
+
+export function updateGoal(state, updatedGoal) {
+  const isInExpired = state.expiredGoals && state.expiredGoals.some((g) => g.id === updatedGoal.id);
+  if (isInExpired) {
+    return {
+      ...state,
+      expiredGoals: state.expiredGoals.map((g) => (g.id === updatedGoal.id ? { ...g, ...updatedGoal } : g)),
+    };
+  }
+  return {
+    ...state,
+    goals: state.goals.map((g) => (g.id === updatedGoal.id ? { ...g, ...updatedGoal } : g)),
+  };
+}
+
+export function deleteGoal(state, goalId) {
+  return {
+    ...state,
+    goals: state.goals.filter((g) => g.id !== goalId),
+    expiredGoals: state.expiredGoals ? state.expiredGoals.filter((g) => g.id !== goalId) : [],
+  };
+}
+
+export function updateStartup(state, id, updates) {
+  return {
+    ...state,
+    startups: state.startups.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+  };
+}
+
+export function deleteStartup(state, id) {
+  return {
+    ...state,
+    startups: state.startups.filter((s) => s.id !== id),
+  };
+}
+

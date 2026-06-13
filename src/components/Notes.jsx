@@ -34,7 +34,16 @@ export default function Notes({ notes, onAddNote, onEditNote, onDeleteNote, plac
 
   const handleSave = () => {
     if (!noteContent.trim()) return;
-    onAddNote({ date: noteDate, content: noteContent.trim(), checklist });
+    onAddNote({
+      id: editingNote ? editingNote.id : undefined,
+      date: noteDate,
+      content: noteContent.trim(),
+      checklist,
+      time: editingNote 
+        ? editingNote.time 
+        : new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+      createdAt: editingNote ? editingNote.createdAt : undefined,
+    });
     setModalOpen(false);
   };
 
@@ -54,7 +63,11 @@ export default function Notes({ notes, onAddNote, onEditNote, onDeleteNote, plac
     setChecklist(checklist.filter((item) => item.id !== id));
   };
 
-  const sorted = [...notes].sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = [...notes].sort((a, b) => {
+    const dateComp = b.date.localeCompare(a.date);
+    if (dateComp !== 0) return dateComp;
+    return (a.createdAt || 0) - (b.createdAt || 0);
+  });
 
   return (
     <>
@@ -88,9 +101,16 @@ export default function Notes({ notes, onAddNote, onEditNote, onDeleteNote, plac
               style={{ padding: '16px 20px' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span className="mono" style={{ fontSize: '12px', color: 'var(--accent-primary)', fontWeight: 600 }}>
-                  {note.date}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="mono" style={{ fontSize: '12px', color: 'var(--accent-primary)', fontWeight: 600 }}>
+                    {note.date}
+                  </span>
+                  {note.time && (
+                    <span className="mono" style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'var(--bg-card)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                      {note.time}
+                    </span>
+                  )}
+                </div>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <motion.button
                     whileHover={{ scale: 1.1 }}

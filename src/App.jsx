@@ -10,9 +10,14 @@ import {
   addNote,
   deleteNote,
   addGoal,
+  updateGoal,
+  deleteGoal,
+  updateStartup,
+  deleteStartup,
   generateInsights,
   formatCurrency,
 } from './utils/calculations.js';
+
 
 import { auth, googleProvider, db } from './firebase.js';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
@@ -40,8 +45,22 @@ export default function App() {
   const [dbError, setDbError] = useState(null);
 
   const [insightGoal, setInsightGoal] = useState(null);
-  const [isEditEndDateOpen, setIsEditEndDateOpen] = useState(false);
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [editingGoalData, setEditingGoalData] = useState(null);
+
+  const [isEditJourneyOpen, setIsEditJourneyOpen] = useState(false);
+  const [tempName, setTempName] = useState(state.name || '');
+  const [tempStartDate, setTempStartDate] = useState(state.startDate || '2026-02-10');
   const [tempEndDate, setTempEndDate] = useState(state.endDate || '2030-12-31');
+
+  const [isEditStartupOpen, setIsEditStartupOpen] = useState(false);
+  const [editingStartup, setEditingStartup] = useState(null);
+  const [tempStartupName, setTempStartupName] = useState('');
+  const [tempStartupStage, setTempStartupStage] = useState('idea');
+  const [tempStartupIdeaDate, setTempStartupIdeaDate] = useState('');
+  const [tempStartupBuildDate, setTempStartupBuildDate] = useState('');
+  const [tempStartupCompletedDate, setTempStartupCompletedDate] = useState('');
+
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
   const [goalForm, setGoalForm] = useState({
     title: '',
@@ -176,10 +195,20 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (state.endDate) {
-      setTempEndDate(state.endDate);
+    if (state.name) setTempName(state.name);
+    if (state.startDate) setTempStartDate(state.startDate);
+    if (state.endDate) setTempEndDate(state.endDate);
+  }, [state.name, state.startDate, state.endDate]);
+
+  useEffect(() => {
+    if (insightGoal) {
+      const targetGoal = state.goals.find((g) => g.id === insightGoal.id) || state.expiredGoals?.find((g) => g.id === insightGoal.id) || insightGoal;
+      setEditingGoalData({ ...targetGoal });
+    } else {
+      setEditingGoalData(null);
     }
-  }, [state.endDate]);
+    setIsEditingGoal(false);
+  }, [insightGoal, state.goals, state.expiredGoals]);
 
   useEffect(() => {
     setTempNetworth(state.currentRevenue);
@@ -228,6 +257,36 @@ export default function App() {
     (amount) => update((s) => ({ ...s, currentRevenue: amount })),
     [update]
   );
+
+  const handleUpdateGoal = useCallback(
+    (updatedGoal) => update((s) => updateGoal(s, updatedGoal)),
+    [update]
+  );
+
+  const handleDeleteGoal = useCallback(
+    (goalId) => update((s) => deleteGoal(s, goalId)),
+    [update]
+  );
+
+  const handleUpdateStartup = useCallback(
+    (id, updates) => update((s) => updateStartup(s, id, updates)),
+    [update]
+  );
+
+  const handleDeleteStartup = useCallback(
+    (id) => update((s) => deleteStartup(s, id)),
+    [update]
+  );
+
+  const handleEditStartupClick = useCallback((startup) => {
+    setEditingStartup(startup);
+    setTempStartupName(startup.name || '');
+    setTempStartupStage(startup.status || 'idea');
+    setTempStartupIdeaDate(startup.ideaDate || '');
+    setTempStartupBuildDate(startup.buildStartDate || '');
+    setTempStartupCompletedDate(startup.completedDate || '');
+    setIsEditStartupOpen(true);
+  }, []);
 
   const handleHeatmapClick = useCallback(
     (date) => {
@@ -483,7 +542,7 @@ export default function App() {
         darkMode={state.darkMode}
         onToggleDarkMode={handleToggleDarkMode}
         endDate={state.endDate || '2030-12-31'}
-        onEditEndDate={() => setIsEditEndDateOpen(true)}
+        onEditJourney={() => setIsEditJourneyOpen(true)}
         user={user}
         onLogin={handleLogin}
         onLogout={handleLogout}
@@ -537,6 +596,7 @@ export default function App() {
                 startups={state.startups}
                 onAddStartup={handleAddStartup}
                 onMoveStartup={handleMoveStartup}
+                onEditStartup={handleEditStartupClick}
               />
             </motion.div>
           )}
@@ -562,7 +622,7 @@ export default function App() {
         </motion.div>
       </main>
 
-      {/* ── Insight Popup ── */}
+      {/* ── Insight Popup / Edit Goal Modal ── */}
       <AnimatePresence>
         {(() => {
           const activeInsightGoal = insightGoal
@@ -570,6 +630,144 @@ export default function App() {
             : null;
 
           if (!activeInsightGoal) return null;
+
+          if (isEditingGoal && editingGoalData) {
+            return (
+              <motion.div
+                className="modal-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setInsightGoal(null)}
+              >
+                <motion.div
+                  className="modal-content"
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ maxWidth: '440px' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <h2 style={{ fontSize: '18px', fontWeight: 800 }}>🎯 Edit Goal / Resolution</h2>
+                    <button
+                      onClick={() => setInsightGoal(null)}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
+                        Goal Title / Resolution
+                      </label>
+                      <input
+                        type="text"
+                        className="custom-input"
+                        value={editingGoalData.title || ''}
+                        onChange={(e) => setEditingGoalData({ ...editingGoalData, title: e.target.value })}
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
+                          Target Value
+                        </label>
+                        <input
+                          type="number"
+                          className="custom-input"
+                          value={editingGoalData.target || 0}
+                          onChange={(e) => setEditingGoalData({ ...editingGoalData, target: parseFloat(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
+                          Unit
+                        </label>
+                        <select
+                          className="custom-select"
+                          style={{ width: '100%', padding: '10px 36px 10px 14px' }}
+                          value={editingGoalData.unit || 'startups'}
+                          onChange={(e) => setEditingGoalData({ ...editingGoalData, unit: e.target.value })}
+                        >
+                          <option value="startups">startups</option>
+                          <option value="days">days</option>
+                          <option value="₹">₹ (INR)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
+                          Goal Type
+                        </label>
+                        <select
+                          className="custom-select"
+                          style={{ width: '100%', padding: '10px 36px 10px 14px' }}
+                          value={editingGoalData.type || 'fixed'}
+                          onChange={(e) => setEditingGoalData({ ...editingGoalData, type: e.target.value })}
+                        >
+                          <option value="fixed">Fixed Target</option>
+                          <option value="monthly">Monthly Recurring</option>
+                          <option value="longterm">Longterm Milestone</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
+                          Deadline
+                        </label>
+                        <input
+                          type="date"
+                          className="custom-input"
+                          value={editingGoalData.deadline || ''}
+                          onChange={(e) => setEditingGoalData({ ...editingGoalData, deadline: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between' }}>
+                    <button
+                      className="glow-btn"
+                      style={{ background: 'var(--danger-glow)', border: '1px solid var(--danger)', color: 'var(--danger)', fontSize: '13px', padding: '8px 16px' }}
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this goal/resolution?')) {
+                          handleDeleteGoal(activeInsightGoal.id);
+                          setInsightGoal(null);
+                        }
+                      }}
+                    >
+                      Delete Goal
+                    </button>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <button
+                        className="glow-btn"
+                        style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '13px', padding: '8px 16px' }}
+                        onClick={() => setIsEditingGoal(false)}
+                      >
+                        Back
+                      </button>
+                      <button
+                        className="glow-btn"
+                        style={{ fontSize: '13px', padding: '8px 16px' }}
+                        onClick={() => {
+                          handleUpdateGoal(editingGoalData);
+                          setIsEditingGoal(false);
+                        }}
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            );
+          }
 
           return (
             <motion.div
@@ -635,19 +833,32 @@ export default function App() {
                     }}
                   />
                 </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
+                  <button
+                    className="glow-btn"
+                    style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '13px', padding: '8px 16px' }}
+                    onClick={() => setIsEditingGoal(true)}
+                  >
+                    Edit Goal / Resolution
+                  </button>
+                </div>
               </motion.div>
             </motion.div>
           );
         })()}
+      </AnimatePresence>
 
-        {/* ── Edit Committed Date Modal ── */}
-        {isEditEndDateOpen && (
+      {/* ── Edit Journey Details Modal ── */}
+      <AnimatePresence>
+        {isEditJourneyOpen && (
           <motion.div
             className="modal-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setIsEditEndDateOpen(false)}
+            onClick={() => setIsEditJourneyOpen(false)}
           >
             <motion.div
               className="modal-content"
@@ -658,51 +869,237 @@ export default function App() {
               style={{ maxWidth: '400px' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: 800 }}>📅 Edit Committed Date</h2>
+                <h2 style={{ fontSize: '18px', fontWeight: 800 }}>✨ Edit Journey Details</h2>
                 <button
-                  onClick={() => setIsEditEndDateOpen(false)}
+                  onClick={() => setIsEditJourneyOpen(false)}
                   style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
                 >
                   <X size={18} />
                 </button>
               </div>
 
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>
-                  Committed till
-                </label>
-                <input
-                  type="date"
-                  className="custom-input"
-                  value={tempEndDate}
-                  onChange={(e) => setTempEndDate(e.target.value)}
-                  style={{ width: '100%' }}
-                />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                    Builder Name / Title
+                  </label>
+                  <input
+                    type="text"
+                    className="custom-input"
+                    value={tempName}
+                    onChange={(e) => setTempName(e.target.value)}
+                    placeholder="SaaS Diary"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    className="custom-input"
+                    value={tempStartDate}
+                    onChange={(e) => setTempStartDate(e.target.value)}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                    Committed till
+                  </label>
+                  <input
+                    type="date"
+                    className="custom-input"
+                    value={tempEndDate}
+                    onChange={(e) => setTempEndDate(e.target.value)}
+                    style={{ width: '100%' }}
+                  />
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                 <button
                   className="glow-btn"
                   style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-                  onClick={() => setIsEditEndDateOpen(false)}
+                  onClick={() => setIsEditJourneyOpen(false)}
                 >
                   Cancel
                 </button>
                 <button
                   className="glow-btn"
                   onClick={() => {
-                    if (tempEndDate) {
-                      update((s) => ({ ...s, endDate: tempEndDate }));
-                      setIsEditEndDateOpen(false);
-                    }
+                    update((s) => ({
+                      ...s,
+                      name: tempName,
+                      startDate: tempStartDate,
+                      endDate: tempEndDate,
+                    }));
+                    setIsEditJourneyOpen(false);
                   }}
                 >
-                  Save Date
+                  Save Changes
                 </button>
               </div>
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* ── Edit Startup Modal ── */}
+      <AnimatePresence>
+        {isEditStartupOpen && editingStartup && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => {
+              setIsEditStartupOpen(false);
+              setEditingStartup(null);
+            }}
+          >
+            <motion.div
+              className="modal-content"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: '440px' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 800 }}>🚀 Edit Startup Progress</h2>
+                <button
+                  onClick={() => {
+                    setIsEditStartupOpen(false);
+                    setEditingStartup(null);
+                  }}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                    Startup Name
+                  </label>
+                  <input
+                    type="text"
+                    className="custom-input"
+                    value={tempStartupName}
+                    onChange={(e) => setTempStartupName(e.target.value)}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                    Status / Stage
+                  </label>
+                  <select
+                    className="custom-select"
+                    style={{ width: '100%', padding: '10px 36px 10px 14px' }}
+                    value={tempStartupStage}
+                    onChange={(e) => setTempStartupStage(e.target.value)}
+                  >
+                    <option value="idea">Idea Stage</option>
+                    <option value="building">Building Stage</option>
+                    <option value="completed">Completed / Shipped</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                    Idea Date
+                  </label>
+                  <input
+                    type="date"
+                    className="custom-input"
+                    value={tempStartupIdeaDate}
+                    onChange={(e) => setTempStartupIdeaDate(e.target.value)}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                    Build Start Date
+                  </label>
+                  <input
+                    type="date"
+                    className="custom-input"
+                    value={tempStartupBuildDate}
+                    onChange={(e) => setTempStartupBuildDate(e.target.value)}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                    Completed / Shipped Date
+                  </label>
+                  <input
+                    type="date"
+                    className="custom-input"
+                    value={tempStartupCompletedDate}
+                    onChange={(e) => setTempStartupCompletedDate(e.target.value)}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between' }}>
+                <button
+                  className="glow-btn"
+                  style={{ background: 'var(--danger-glow)', border: '1px solid var(--danger)', color: 'var(--danger)', fontSize: '13px', padding: '8px 16px' }}
+                  onClick={() => {
+                    if (window.confirm(`Are you sure you want to delete "${editingStartup.name}"?`)) {
+                      handleDeleteStartup(editingStartup.id);
+                      setIsEditStartupOpen(false);
+                      setEditingStartup(null);
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    className="glow-btn"
+                    style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '13px', padding: '8px 16px' }}
+                    onClick={() => {
+                      setIsEditStartupOpen(false);
+                      setEditingStartup(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="glow-btn"
+                    style={{ fontSize: '13px', padding: '8px 16px' }}
+                    onClick={() => {
+                      handleUpdateStartup(editingStartup.id, {
+                        name: tempStartupName,
+                        status: tempStartupStage,
+                        ideaDate: tempStartupIdeaDate || null,
+                        buildStartDate: tempStartupBuildDate || null,
+                        completedDate: tempStartupCompletedDate || null,
+                      });
+                      setIsEditStartupOpen(false);
+                      setEditingStartup(null);
+                    }}
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
         {/* ── Add Goal Modal ── */}
         {isAddGoalOpen && (
@@ -897,7 +1294,6 @@ export default function App() {
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
     </div>
   );
 }
