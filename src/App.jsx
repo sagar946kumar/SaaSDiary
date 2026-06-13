@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, AlertTriangle, Database } from 'lucide-react';
 import {
   loadState,
   saveState,
@@ -26,6 +26,7 @@ import Goals from './components/Goals.jsx';
 import Notes from './components/Notes.jsx';
 import LandingPage from './components/LandingPage.jsx';
 import Onboarding from './components/Onboarding.jsx';
+import { DEFAULT_STATE } from './data/data.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dbError, setDbError] = useState(null);
 
   const [insightGoal, setInsightGoal] = useState(null);
   const [isEditEndDateOpen, setIsEditEndDateOpen] = useState(false);
@@ -63,16 +65,41 @@ export default function App() {
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             setState({ ...docSnap.data(), isOnboarded: true });
+            setDbError(null);
           } else {
-            // First time login: mark isOnboarded as false to trigger onboarding
-            setState((prev) => ({ ...prev, isOnboarded: false }));
+            // Document doesn't exist in Firestore. Check if the user is already onboarded locally.
+            setState((prev) => {
+              if (prev.isOnboarded === true) {
+                // User is onboarded locally. Sync local data to Firestore.
+                setDoc(docRef, prev)
+                  .then(() => setDbError(null))
+                  .catch((err) => {
+                    console.error('Error syncing local state to Firestore on login:', err);
+                    setDbError(err.message || 'Database write blocked');
+                  });
+                return prev;
+              } else {
+                // New user: trigger onboarding questionnaire
+                return { ...prev, isOnboarded: false };
+              }
+            });
           }
         } catch (err) {
           console.error('Error loading Firestore data on login:', err);
+          setDbError(err.message || 'Database access blocked');
+          // Fallback: If Firestore read fails (e.g. database rules/network issues),
+          // preserve local onboarding status if they are already onboarded.
+          setState((prev) => {
+            if (prev.isOnboarded === true) {
+              return prev;
+            }
+            return { ...prev, isOnboarded: false };
+          });
         }
         setUser(u);
       } else {
         setUser(null);
+        setDbError(null);
       }
       setLoading(false);
     });
@@ -83,17 +110,25 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     const docRef = doc(db, 'users', user.uid);
-    const unsubscribe = onSnapshot(docRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const remoteData = { ...docSnap.data(), isOnboarded: true };
-        setState((prev) => {
-          if (JSON.stringify(prev) !== JSON.stringify(remoteData)) {
-            return remoteData;
-          }
-          return prev;
-        });
+    const unsubscribe = onSnapshot(
+      docRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const remoteData = { ...docSnap.data(), isOnboarded: true };
+          setState((prev) => {
+            if (JSON.stringify(prev) !== JSON.stringify(remoteData)) {
+              return remoteData;
+            }
+            return prev;
+          });
+          setDbError(null);
+        }
+      },
+      (err) => {
+        console.error('Firestore real-time sync error:', err);
+        setDbError(err.message || 'Real-time database sync failed');
       }
-    });
+    );
     return () => unsubscribe();
   }, [user]);
 
@@ -106,8 +141,10 @@ export default function App() {
       const saveToFirestore = async () => {
         try {
           await setDoc(doc(db, 'users', user.uid), state);
+          setDbError(null);
         } catch (err) {
           console.error('Error saving state to Firestore:', err);
+          setDbError(err.message || 'Failed to sync data with database');
         }
       };
       saveToFirestore();
@@ -129,8 +166,8 @@ export default function App() {
       setLoading(true);
       await signOut(auth);
       // Clean up state on logout to prevent state bleeding
-      const local = loadState();
-      setState({ ...local, isOnboarded: undefined });
+      localStorage.removeItem('sagar-saas-builder-state');
+      setState({ ...DEFAULT_STATE, isOnboarded: undefined });
     } catch (err) {
       console.error('Error signing out:', err);
     } finally {
@@ -302,11 +339,80 @@ export default function App() {
     if (user) {
       try {
         await setDoc(doc(db, 'users', user.uid), newState);
+        setDbError(null);
       } catch (err) {
         console.error('Error saving onboarding data to Firestore:', err);
+        setDbError(err.message || 'Failed to save onboarding data to database');
       }
     }
   }, [user, state.darkMode]);
+
+  const renderDbErrorBanner = () => {
+    if (!dbError) return null;
+
+    const isPermissionDenied =
+      dbError.toLowerCase().includes('permission') ||
+      dbError.toLowerCase().includes('insufficient') ||
+      dbError.toLowerCase().includes('rule') ||
+      dbError.toLowerCase().includes('blocked');
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -50 }}
+        style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '90%',
+          maxWidth: '600px',
+          background: 'rgba(239, 68, 68, 0.15)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          borderRadius: '12px',
+          padding: '16px 20px',
+          color: state.darkMode ? '#fca5a5' : '#7f1d1d',
+          zIndex: 9999,
+          display: 'flex',
+          gap: '12px',
+          alignItems: 'flex-start',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+        }}
+      >
+        <AlertTriangle size={20} style={{ flexShrink: 0, marginTop: '2px', color: '#ef4444' }} />
+        <div style={{ flexGrow: 1, fontSize: '13px', lineHeight: '1.5', textAlign: 'left' }}>
+          <strong style={{ display: 'block', marginBottom: '4px', color: '#ef4444', fontWeight: 700 }}>
+            Database Sync Issue
+          </strong>
+          <span>{dbError}</span>
+          {isPermissionDenied && (
+            <p style={{ marginTop: '8px', fontSize: '12px', color: state.darkMode ? '#cbd5e1' : '#475569' }}>
+              💡 <strong>How to fix:</strong> Your Firestore security rules are blocking access or the database isn't initialized. Go to your <strong>Firebase Console &rarr; Firestore Database &rarr; Rules</strong> and allow authenticated users to read/write under <code>users/&#123;userId&#125;</code>.
+            </p>
+          )}
+        </div>
+        <button
+          onClick={() => setDbError(null)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'inherit',
+            cursor: 'pointer',
+            padding: '2px',
+            borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: 0.7,
+          }}
+        >
+          <X size={16} />
+        </button>
+      </motion.div>
+    );
+  };
 
   if (loading) {
     return (
@@ -343,21 +449,27 @@ export default function App() {
 
   if (!user) {
     return (
-      <LandingPage
-        onLogin={handleLogin}
-        darkMode={state.darkMode}
-        onToggleDarkMode={handleToggleDarkMode}
-      />
+      <>
+        {renderDbErrorBanner()}
+        <LandingPage
+          onLogin={handleLogin}
+          darkMode={state.darkMode}
+          onToggleDarkMode={handleToggleDarkMode}
+        />
+      </>
     );
   }
 
   if (state.isOnboarded !== true) {
     return (
-      <Onboarding
-        user={user}
-        onComplete={handleOnboardingComplete}
-        darkMode={state.darkMode}
-      />
+      <>
+        {renderDbErrorBanner()}
+        <Onboarding
+          user={user}
+          onComplete={handleOnboardingComplete}
+          darkMode={state.darkMode}
+        />
+      </>
     );
   }
 
@@ -366,6 +478,7 @@ export default function App() {
       data-theme={state.darkMode ? 'dark' : 'light'}
       style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
     >
+      {renderDbErrorBanner()}
       <Header
         darkMode={state.darkMode}
         onToggleDarkMode={handleToggleDarkMode}
